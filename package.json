@@ -1,0 +1,22 @@
+{
+    "name": "intelligent-portfolio-pro",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+        "dev:backend": "cd backend && npm run dev",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "build": "npm run build --prefix backend && npm run build --prefix frontend",
+        "prod": "concurrently \"npm run start --prefix backend\" \"npm run preview --prefix frontend\"",
+        "start": "npm run dev"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    },
+    "dependencies": {
+        "@google/genai": "^1.44.0",
+        "helmet": "^8.1.0",
+        "zod": "^4.3.6"
+    }
+}

@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS stripe_events;
+DROP TABLE IF EXISTS public_portfolios;
+DROP TABLE IF EXISTS snapshots;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS prices;
+DROP TABLE IF EXISTS portfolios;
+DROP TABLE IF EXISTS portfolio_groups;
+DROP TABLE IF EXISTS assets;
+DROP TABLE IF EXISTS users;
