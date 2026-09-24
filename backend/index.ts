@@ -57,6 +57,24 @@ const aiService = new AIService();
 const authService = new AuthService();
 const priceUpdateService = new PriceUpdateService();
 
+const getDashboardWithCurrentPrices = async (userId: number, portfolioId?: number) => {
+    const symbolsData = await portfolioService.getUserPortfolio(userId, portfolioId);
+    const marketPricedTypes = new Set(['acoes', 'fiis', 'etfs', 'etfs_internacional', 'cripto', 'acoes_internacionais', 'bonds']);
+    const tickerSymbols = [...new Set(
+        symbolsData
+            .filter(asset => marketPricedTypes.has(asset.type || 'acoes'))
+            .map(asset => asset.symbol)
+    )];
+
+    const batchPrices = await marketDataService.getBatchPrices(tickerSymbols);
+    const currentPrices: Record<string, number> = {};
+    Object.entries(batchPrices).forEach(([symbol, price]) => {
+        currentPrices[symbol] = price.price;
+    });
+
+    return portfolioService.getDashboardFormat(userId, currentPrices, portfolioId);
+};
+
 // Rate limiters
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -246,15 +264,7 @@ app.get('/api/portfolio', authenticateToken, checkSubscription, async (req, res)
             portfolioId = parseInt(portfolioIdRaw[0]);
         }
 
-        const symbolsData = await portfolioService.getUserPortfolio(userId, portfolioId);
-        const marketPricedTypes = new Set(['acoes', 'fiis', 'etfs', 'etfs_internacional', 'cripto', 'acoes_internacionais', 'bonds']);
-        const tickerSymbols = [...new Set(symbolsData.filter(asset => marketPricedTypes.has(asset.type || 'acoes')).map(asset => asset.symbol))];
-
-        const batchPrices = await marketDataService.getBatchPrices(tickerSymbols);
-        const currentPrices: Record<string, number> = {};
-        Object.entries(batchPrices).forEach(([s, p]) => { currentPrices[s] = p.price; });
-
-        const dashboard = await portfolioService.getDashboardFormat(userId, currentPrices, portfolioId);
+        const dashboard = await getDashboardWithCurrentPrices(userId, portfolioId);
         res.json(dashboard);
     } catch (error) {
         logger.error('Portfolio fetch error:', error);
@@ -299,7 +309,7 @@ app.post('/api/portfolio/asset', authenticateToken, checkSubscription, async (re
             ]
         );
 
-        const dashboard = await portfolioService.getDashboardFormat(userId, {}, targetId);
+        const dashboard = await getDashboardWithCurrentPrices(userId, targetId);
         res.json({ success: true, dashboard });
     } catch (error: any) {
         logger.error('[ASSET] Error adding asset:', error?.message || error);
@@ -311,7 +321,7 @@ app.post('/api/portfolio/bulk', authenticateToken, checkSubscription, async (req
     try {
         const { assets, portfolioId } = req.body;
         await portfolioService.bulkAddAssets(req.userId!, assets, portfolioId);
-        const dashboard = await portfolioService.getDashboardFormat(req.userId!, {}, portfolioId);
+        const dashboard = await getDashboardWithCurrentPrices(req.userId!, portfolioId);
         res.json({ success: true, dashboard });
     } catch (error: any) {
         logger.error('[ASSET] Error in bulk import:', error?.message || error);
@@ -343,7 +353,7 @@ app.put('/api/portfolio/asset/:id', authenticateToken, checkSubscription, async 
             ]
         );
 
-        const dashboard = await portfolioService.getDashboardFormat(req.userId!, {}, portfolioId);
+        const dashboard = await getDashboardWithCurrentPrices(req.userId!, portfolioId);
         res.json({ success: true, dashboard });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update asset' });
@@ -362,7 +372,7 @@ app.delete('/api/portfolio/asset/:id', authenticateToken, checkSubscription, asy
         }
         const db = await getDb();
         await db.run('DELETE FROM portfolios WHERE id = ? AND user_id = ?', [req.params.id, req.userId!]);
-        const dashboard = await portfolioService.getDashboardFormat(req.userId!, {}, portfolioId);
+        const dashboard = await getDashboardWithCurrentPrices(req.userId!, portfolioId);
         res.json({ success: true, dashboard });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete asset' });

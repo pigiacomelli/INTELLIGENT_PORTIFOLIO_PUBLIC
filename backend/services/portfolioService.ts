@@ -141,6 +141,7 @@ export class PortfolioService {
                 id: asset.id,
                 ticker: asset.symbol,
                 Quantidade: asset.quantity,
+                precoUnitario: asset.avg_price,
                 precoAtual: priceToUse,
                 "Valor Atualizado": valorAtualizado,
                 Instituição: asset.instituicao,

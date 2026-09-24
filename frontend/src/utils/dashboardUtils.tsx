@@ -107,48 +107,34 @@ export const ACOES_INTL_OPTIONS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVD
 export const BONDS_OPTIONS = ['TLT', 'AGG', 'BND', 'IEF', 'SHY', 'TIPS', 'HYG', 'LQD', 'BNDX', 'Outro'];
 
 export const CustomLegendOverlay = ({ data, total, show, formatLabel, title = "Legenda", colors = COLORS }: any) => {
+    if (!show) return null;
+
     return (
-        <div style={{
-            position: 'absolute',
-            top: 0,
-            right: show ? 0 : '-100%',
-            width: '240px',
-            height: '100%',
-            background: 'rgba(15, 23, 42, 0.85)',
-            backdropFilter: 'blur(12px)',
-            borderLeft: '1px solid var(--glass-border-strong)',
-            padding: '1.2rem',
-            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-            zIndex: 10,
-            overflowY: 'auto',
-            borderRadius: '0 16px 16px 0',
-            boxShadow: show ? '-15px 0 35px -5px rgba(0,0,0,0.6)' : 'none',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: '#f8fafc', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.8rem' }}>
+        <aside className="chart-legend" aria-label={`Legenda: ${title}`}>
+            <h4 className="chart-legend__title">
                 {title}
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
+            <div className="chart-legend__list">
                 {data.map((item: any, i: number) => {
                     const value = item.value || 0;
                     const percent = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
                     const name = formatLabel ? formatLabel(item.name) : item.name;
                     return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-                                <div style={{ minWidth: '12px', height: '12px', borderRadius: '4px', backgroundColor: item.color || colors[i % colors.length] }} />
-                                <span style={{ color: '#cbd5e1', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }} title={name}>
+                        <div key={`${name}-${i}`} className="chart-legend__item">
+                            <div className="chart-legend__name-wrap">
+                                <div className="chart-legend__swatch" style={{ backgroundColor: item.color || colors[i % colors.length] }} />
+                                <span className="chart-legend__name" title={name}>
                                     {name}
                                 </span>
                             </div>
-                            <span style={{ color: '#f8fafc', fontSize: '0.85rem', fontWeight: 800 }}>
-                                {percent}%
-                            </span>
+                            <div className="chart-legend__numbers">
+                                <strong>{value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 })}</strong>
+                                <span>{percent}%</span>
+                            </div>
                         </div>
                     );
                 })}
             </div>
-        </div>
+        </aside>
     );
 };

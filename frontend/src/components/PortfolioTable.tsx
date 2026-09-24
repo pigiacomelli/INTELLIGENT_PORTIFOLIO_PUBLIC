@@ -132,11 +132,18 @@ export const PortfolioTable: React.FC<PortfolioTableProps> = ({ assets, activeTa
                                     )}
                                 </td>
                                 <td style={{ padding: '1.5rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 800, borderBottom: idx === sortedAssets.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)' }}>
-                                    {valueBasedCategory ? <span style={{ color: 'var(--text-muted)' }}>—</span> : <>{asset.Quantidade.toLocaleString('pt-BR')} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>UN</span></>}
+                                    {valueBasedCategory ? <span style={{ color: 'var(--text-muted)' }}>—</span> : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <span>{asset.Quantidade.toLocaleString('pt-BR')} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>UN</span></span>
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 700 }}>
+                                                {(asset.precoAtual || asset.precoUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })} por unidade
+                                            </small>
+                                        </div>
+                                    )}
                                 </td>
                                 <td style={{ padding: '1.5rem 1.5rem', fontWeight: 900, color: 'var(--text-main)', fontSize: '1.15rem', borderBottom: idx === sortedAssets.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)' }}>
                                     <span style={{ fontSize: '0.9rem', color: 'var(--accent-blue)', marginRight: '4px' }}>R$</span>
-                                    {valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    {valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </td>
                                 <td style={{ padding: '1.5rem 1.5rem', borderBottom: idx === sortedAssets.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)' }}>
                                     {asset.lucroPrejuizoPercentual !== undefined ? (

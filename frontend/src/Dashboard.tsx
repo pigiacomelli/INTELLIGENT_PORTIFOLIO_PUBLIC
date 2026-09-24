@@ -247,7 +247,10 @@ const Dashboard = () => {
 
     const openEditModal = (category: string, index: number, asset: Asset) => {
         setEditingAsset({ category, index, asset });
-        setNewAsset(asset);
+        const calculatedUnitPrice = asset.precoAtual
+            || asset.precoUnitario
+            || (asset.Quantidade > 0 ? (asset['Valor Atualizado'] || 0) / asset.Quantidade : 0);
+        setNewAsset({ ...asset, precoUnitario: calculatedUnitPrice });
         setSelectedCategory(category);
         setIsModalOpen(true);
     };
@@ -422,7 +425,7 @@ const Dashboard = () => {
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <BadgeDollarSign size={14} /> Patrimônio Consolidado
                             </span>
-                            <span style={{ color: 'var(--accent-blue)', fontSize: '1.6rem', fontWeight: 900 }}>R$ {(totalValue + caixaTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span style={{ color: 'var(--accent-blue)', fontSize: '1.6rem', fontWeight: 900 }}>R$ {(totalValue + caixaTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </header>
@@ -495,7 +498,7 @@ const Dashboard = () => {
                                         <EmptyPortfolio onAddAsset={openAddModal} onImport={() => setIsImportModalOpen(true)} />
                                     ) : (
                                         <>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div className="portfolio-summary-wrap">
                                                 <PortfolioSummary caixaTotal={caixaTotal} totalValue={totalValue} assetCount={assetCount} vertical={false} />
                                             </div>
 
@@ -512,13 +515,9 @@ const Dashboard = () => {
                                                     </div>
                                                 </div>
                                             )}
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem' }}>
-                                                <div className="glass-card" style={{ padding: '2rem', borderRadius: '24px' }}>
-                                                    <AssetAllocationChart title="Alocação por Classe" icon={<PieChartIcon size={24} color="var(--accent-blue)" />} data={chartData} total={totalValue + caixaTotal} showLegend={true} colors={COLORS} formatLabel={(n: string) => n.replace(/_/g, ' ').toUpperCase()} height="400px" innerRadius={80} outerRadius={110} />
-                                                </div>
-                                                <div className="glass-card" style={{ padding: '2rem', borderRadius: '24px' }}>
-                                                    <AssetAllocationChart title="Por instituição" icon={<Building2 size={24} color="#6366f1" />} data={stats.instData} total={totalValue + caixaTotal} showLegend={true} colors={[...COLORS].slice(2).concat(COLORS.slice(0, 2))} height="400px" innerRadius={80} outerRadius={110} />
-                                                </div>
+                                            <div className="dashboard-chart-grid">
+                                                <AssetAllocationChart title="Alocação por Classe" icon={<PieChartIcon size={24} color="var(--accent-blue)" />} data={chartData} total={totalValue + caixaTotal} showLegend={true} colors={COLORS} formatLabel={(n: string) => n.replace(/_/g, ' ').toUpperCase()} height="400px" innerRadius={80} outerRadius={110} />
+                                                <AssetAllocationChart title="Por instituição" icon={<Building2 size={24} color="#6366f1" />} data={stats.instData} total={totalValue + caixaTotal} showLegend={true} colors={[...COLORS].slice(2).concat(COLORS.slice(0, 2))} height="400px" innerRadius={80} outerRadius={110} />
                                             </div>
 
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
@@ -531,7 +530,7 @@ const Dashboard = () => {
                                                     </h3>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                                                         {stats.top5.map((asset, idx) => (
-                                                            <div key={idx} className="hover-scale" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid var(--glass-border)', cursor: 'default' }}>
+                                                            <div key={idx} className="hover-scale top-allocation-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid var(--glass-border)', cursor: 'default' }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
                                                                     <div style={{
                                                                         width: '44px', height: '44px', borderRadius: '14px',
@@ -548,8 +547,8 @@ const Dashboard = () => {
                                                                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{asset.Instituição || asset.category.replace('_', ' ')}</span>
                                                                     </div>
                                                                 </div>
-                                                                <div style={{ textAlign: 'right' }}>
-                                                                    <span style={{ fontWeight: 900, fontSize: '1.1rem', display: 'block', color: 'var(--text-main)' }}>R$ {(asset["Valor Atualizado"] || 0).toLocaleString('pt-BR')}</span>
+                                                                <div className="top-allocation-row__value" style={{ textAlign: 'right' }}>
+                                                                    <span style={{ fontWeight: 900, fontSize: 'clamp(0.95rem, 1.6vw, 1.1rem)', display: 'block', color: 'var(--text-main)' }}>R$ {(asset["Valor Atualizado"] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                                                                         <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
                                                                             <div style={{ width: `${((asset["Valor Atualizado"] || 0) / (totalValue + caixaTotal || 1)) * 100}%`, height: '100%', background: COLORS[idx % COLORS.length] }}></div>
@@ -567,20 +566,18 @@ const Dashboard = () => {
                                 </>
                             ) : (
                                 <>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', background: 'rgba(30, 41, 59, 0.4)', padding: '2.5rem', borderRadius: '24px', border: '1px solid var(--glass-border)' }}>
+                                    <div className="category-summary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', background: 'rgba(30, 41, 59, 0.4)', padding: '2.5rem', borderRadius: '24px', border: '1px solid var(--glass-border)' }}>
                                         <div><h2 style={{ fontSize: '2.5rem', fontWeight: 950, margin: 0, color: 'var(--accent-blue)', letterSpacing: '-1px' }}>{getLabel(activeTab)}</h2><p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginTop: '0.5rem' }}>Análise detalhada de seus ativos em {getLabel(activeTab)}</p></div>
                                         <div style={{ textAlign: 'right' }}>
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}><TrendingUp size={14} color="var(--accent-emerald)" /> Subtotal</p>
-                                            <p style={{ fontSize: '2.8rem', fontWeight: 950, color: 'var(--accent-blue)' }}>R$ {(portfolio.totais[activeTab] || 0).toLocaleString('pt-BR')}</p>
+                                            <p className="category-summary__value" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.8rem)', fontWeight: 950, color: 'var(--accent-blue)' }}>R$ {(portfolio.totais[activeTab] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: activeTab === 'renda_fixa' ? '1fr 1fr' : '1fr', gap: '2rem' }}>
-                                        <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '24px' }}>
-                                            <AssetAllocationChart title={activeTab === 'renda_fixa' ? "Alocação por Indexador" : `Distribuição de ${getLabel(activeTab)}`} data={getTabData()} total={portfolio.totais[activeTab] || 0} showLegend={true} colors={COLORS} height="400px" innerRadius={80} outerRadius={120} />
-                                        </div>
+                                    <div className={`category-chart-grid${activeTab === 'renda_fixa' ? ' is-split' : ''}`}>
+                                        <AssetAllocationChart title={activeTab === 'renda_fixa' ? "Alocação por Indexador" : `Distribuição de ${getLabel(activeTab)}`} data={getTabData()} total={portfolio.totais[activeTab] || 0} showLegend={true} colors={COLORS} height="400px" innerRadius={80} outerRadius={120} />
                                         {activeTab === 'renda_fixa' && (
-                                            <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '24px' }}>
+                                            <div className="glass-card issuer-chart-card">
                                                 <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}><ShieldCheck size={24} color="var(--accent-amber)" /> Alocação por Emissor (Risco FGC)</h3>
                                                 <AssetAllocationChart title="" data={stats.rfEmissoresData} total={stats.rendaFixaTotal || 1} showLegend={true} colors={[...COLORS].reverse()} height="350px" innerRadius={80} outerRadius={110} />
                                             </div>
@@ -729,17 +726,21 @@ const Dashboard = () => {
                                 />
                             </div>
 
-                            {/* PREÇO MÉDIO / TAXA */}
+                            {/* PREÇO ATUAL / TAXA */}
                             {['acoes', 'fiis', 'fundos', 'etfs', 'etfs_internacional'].includes(selectedCategory) && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                    <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>PREÇO MÉDIO (OPCIONAL)</label>
+                                    <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>PREÇO ATUAL POR UNIDADE</label>
                                     <input
                                         type="number"
                                         step="any"
+                                        min="0"
                                         value={newAsset.precoUnitario}
                                         onChange={e => setNewAsset({ ...newAsset, precoUnitario: Number(e.target.value) })}
                                         style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
                                     />
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                        Valor calculado: {(newAsset.Quantidade * (newAsset.precoUnitario || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
                                 </div>
                             )}
 
