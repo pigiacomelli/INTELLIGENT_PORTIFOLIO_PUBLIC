@@ -5,9 +5,13 @@ WHERE NOT EXISTS (
   SELECT 1 FROM portfolio_groups pg WHERE pg.user_id = u.id
 );
 
-UPDATE portfolios p
-SET portfolio_id = pg.id
-FROM portfolio_groups pg
-WHERE p.user_id = pg.user_id
-  AND p.portfolio_id IS NULL
-  AND pg.name = 'Carteira Principal';
+UPDATE portfolios
+SET portfolio_id = (
+  SELECT pg.id
+  FROM portfolio_groups pg
+  WHERE pg.user_id = portfolios.user_id
+    AND pg.name = 'Carteira Principal'
+  ORDER BY pg.id
+  LIMIT 1
+)
+WHERE portfolio_id IS NULL;

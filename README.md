@@ -1,111 +1,73 @@
-# Intelligent Portfolio 🚀
+# Intelligent Portfolio — versão local
 
-**Gerencie todos os seus investimentos em um único dashboard inteligente.**
+Aplicativo pessoal para consolidar investimentos, importar a posição da B3 e acompanhar carteiras no próprio computador. Não há página comercial, cadastro, assinatura nem compartilhamento público.
 
-Um SaaS premium de consolidação financeira criado para investidores que exigem precisão, design responsivo em *Glassmorphism* e insights guiados por Inteligência Artificial. Abandone de vez as planilhas complexas.
+## O que está incluído
 
-![Dashboard Preview](https://img.shields.io/badge/Status-Beta_MVP-blueviolet?style=for-the-badge)
-![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node%20%7C%20PostgreSQL%20(Neon)-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
+- Banco local criado automaticamente em `backend/data/intelligent-portfolio.db`.
+- Acesso direto ao painel, com um perfil pessoal criado automaticamente no primeiro uso.
+- Importação do Excel de posição consolidada da B3.
+- Suporte a ações BR e internacionais, ETFs BR e internacionais, FIIs, fundos, renda fixa, Tesouro, cripto, bonds, caixa, COE e imóveis.
+- Cadastro manual, edição e exclusão de investimentos.
+- Gemini e chave da Brapi opcionais.
 
----
+## Requisitos
 
-## 🌟 O Problema Que Resolvemos
-Investidores profissionais perdem horas tentando consolidar relatórios da B3, corretoras internacionais e carteiras de criptomoedas. O **Intelligent Portfolio** automatiza a ingestão de dados, analisa o risco e oferece rebalanceamento em segundos usando Inteligência Artificial.
+- Node.js 22 ou superior.
+- npm 10 ou superior.
 
-## ✨ Funcionalidades Atuais
+## Primeira execução
 
-### 📊 Dashboard "Cockpit" Premium
-- **Visão consolidada imediata:** Renda Fixa, Variável, FIIs, ETFs Globais e Cripto num só lugar.
-- **Design Glassmorphism:** Interface ultramoderna com navegação superior intuitiva e efeitos visuais premium.
-- **Gráficos Dinâmicos:** Alocação por ativos, risco por instituição e exposição setorial via Recharts.
+Na pasta do projeto:
 
-### 📁 Gestão de Multi-Carteiras (Portfolio Groups)
-- **Organização Flexível:** Crie e gerencie múltiplas carteiras independentes (ex: Aposentadoria, Reserva de Emergência, Trading).
-- **CRUD Completo:** Criação, edição e exclusão de grupos de portfólio.
+```bash
+npm run setup
+npm run dev
+```
 
-### 🔗 Compartilhamento Público
-- **Link de Acesso Único:** Gere links seguros para compartilhar sua visão de carteira com consultores ou amigos sem expor dados sensíveis de login.
+Abra `http://localhost:5173`. O painel cria o perfil local automaticamente e entra direto na carteira.
 
-### 📥 Importação B3 Smart (Excel)
-- **Suporte a extratos B3:** Importação de arquivos `.xlsx` da Área do Investidor B3.
-- **Mapeamento inteligente:** Reconhecimento automático de colunas, limpeza de dados e cálculo de preço médio.
+Nas próximas vezes, basta:
 
-### 🤖 Inteligência Artificial (Gemini)
-- **Diagnóstico de Carteira:** Análise automática de diversificação e nível de risco.
-- **Chat Contextual:** IA que conhece sua carteira e responde dúvidas estratégicas com histórico de conversa.
+```bash
+npm run dev
+```
 
-### 📈 Mercado Hoje & Insights
-- **Busca Global:** Encontre qualquer ativo negociado na B3 ou mercados globais.
-- **Top Movers:** Listagem dinâmica de maiores altas (Gainers) e baixas (Losers) do dia.
-- **Benchmarks em Tempo Real:** IBOVESPA, S&P 500, NASDAQ, BTC, USD/BRL e Heatmap B3.
+O backend usa a porta `3001` e o frontend a `5173`.
 
-### 🛡️ Segurança e Performance
-- **Rate Limiting:** Proteção contra ataques de força bruta no login e chat.
-- **Validação Rigorosa:** Todos os inputs validados via Zod no backend.
-- **Cabeçalhos de Segurança:** Implementação de Helmet para proteção básica contra ataques web.
-- **Agendador de Preços:** Serviço automático de atualização de cotações em background.
+## Importar a posição da B3
 
----
+No painel, use **Importar B3** e selecione o arquivo `.xlsx` baixado da Área do Investidor. Antes de salvar, o importador mostra as abas reconhecidas, o total de posições e os avisos encontrados.
 
-## 🛠️ Stack Tecnológica
+## Banco e backup
 
-- **Frontend:** React.js (TypeScript), Vite, Vanilla CSS, Lucide React, Recharts.
-- **Backend:** Node.js (Express), TypeScript.
-- **Banco de Dados:** **Neon PostgreSQL** (Serverless) com suporte a pooler (Drizzle-ready logic).
-- **Provedor de Dados:** **Brapi API** (Cotações B3, Global e Câmbio).
-- **IA:** Google Gemini AI API.
-- **Assinaturas:** Stripe (Estrutura de Checkout e Webhook implementados).
+O arquivo do banco fica em:
 
----
+```
+backend/data/intelligent-portfolio.db
+```
 
-## 🚀 Como Iniciar
+Para gerar um backup legível em JSON:
 
-### Variáveis de Ambiente (`.env`)
-Configure os seguintes valores no seu arquivo `.env` no **backend**:
-- `DATABASE_URL`: String de conexão Neon PostgreSQL.
-- `BRAPI_API_KEY`: Chave da API Brapi.dev.
-- `GEMINI_API_KEY`: Chave da API Google Generative AI.
-- `JWT_SECRET`: Segredo para autenticação JWT.
-- `STRIPE_SECRET_KEY`: Chave secreta do Stripe.
-- `STRIPE_WEBHOOK_SECRET`: Segredo para validação de webhooks.
+```bash
+npm run db:backup
+```
 
-### Rodando o Projeto
+Os backups são criados em `backend/backups`. Para uma cópia integral, feche o aplicativo e copie o arquivo `.db`.
 
-1. **Backend:**
-   ```bash
-   cd backend
-   npm install
-   npm run build
-   node dist/index.js
-   ```
+## Configuração opcional
 
-2. **Frontend:**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+O aplicativo abre sem `.env`. Para ativar IA ou personalizar portas e caminhos:
 
----
+```bash
+cp backend/.env.example backend/.env
+```
 
-## 🛠️ Operação e Produção
+Depois, preencha somente as chaves desejadas. O modo local ignora a cobrança por assinatura.
 
-Para garantir um deploy seguro e manutenção robusta, consulte os seguintes guias:
+## Verificações
 
-- [**Guia de Ambiente**](docs/ENVIRONMENT.md): Configuração detalhada de variáveis.
-- [**Operações e Manutenção**](docs/OPERATIONS.md): Backup, Restore, Troubleshooting e Logs.
-- [**Auditoria Go-Live**](docs/final_go_live_audit.md): Checklist final antes de abrir para o público.
-- [**Guia de Assinaturas**](docs/TEST_SUBSCRIPTION_GUIDE.md): Como testar o fluxo de pagamentos.
-
----
-
-## 📅 Roadmap de Evolução
-
-1. **Histórico de Patrimônio:** Snapshots diários para visualização de rentabilidade histórica.
-2. **Calendário de Dividendos:** Notificações de proventos provisionados e pagos.
-3. **Módulo de IRPF:** Auxílio na declaração anual de ativos.
-4. **Alocação Alvo:** Definição de metas por classe de ativo com alertas de rebalanceamento.
-
----
-*Built with passion for wealth building.*
+```bash
+npm run build
+npm test --prefix backend
+```

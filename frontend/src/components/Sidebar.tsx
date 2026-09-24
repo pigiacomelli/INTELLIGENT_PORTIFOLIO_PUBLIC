@@ -1,285 +1,153 @@
 import React from 'react';
-import {
-    TrendingUp,
-    Globe2,
-    LayoutDashboard,
-    Fingerprint,
-    Rocket,
-    X,
-    Shield,
-    Share2,
-    HelpCircle,
-    Wallet,
-    LineChart,
-    User,
-    AlertTriangle
-} from 'lucide-react';
+import { HardDrive, LineChart, Rocket, Wallet } from 'lucide-react';
 
 interface SidebarProps {
     currentView: string;
-    onViewChange: (v: string) => void;
-    onLogout: () => void;
+    onViewChange: (view: string) => void;
     onHowItWorks: () => void;
     isOpen: boolean;
-    subscription?: {
-        status: string;
-        plan: string;
-        isActive: boolean;
-        isTrial: boolean;
-        trialDaysLeft: number;
-    } | null;
-    onShare?: () => void;
-    isSharing?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     currentView,
     onViewChange,
-    onLogout,
     onHowItWorks,
-    isOpen,
-    subscription,
-    onShare,
-    isSharing
+    isOpen
 }) => {
     const menuItems = [
         { id: 'carteira', label: 'Minha Carteira', icon: Wallet, accent: 'var(--accent-blue)' },
         { id: 'mercado', label: 'Mercado', icon: LineChart, accent: 'var(--accent-emerald)' },
-        { id: 'conta', label: 'Minha Conta', icon: User, accent: 'var(--accent-purple)' },
     ];
-
-    const getPlanBadge = () => {
-        if (subscription?.isActive) {
-            return { label: 'PRO PLAN', color: 'var(--accent-blue)', icon: Shield, sub: 'VERIFIED ACCT' };
-        }
-        if (subscription?.status === 'past_due') {
-            return { label: 'PENDENTE', color: '#f87171', icon: AlertTriangle, sub: 'ATUALIZAR CARTÃO' };
-        }
-        if (subscription?.status === 'canceled' && !subscription?.isTrial) {
-            return { label: 'CANCELADO', color: '#fbbf24', icon: AlertTriangle, sub: 'INATIVO' };
-        }
-        if (subscription?.isTrial) {
-            return {
-                label: 'TRIAL ACTIVE',
-                color: 'var(--accent-amber)',
-                icon: Rocket,
-                sub: `${subscription.trialDaysLeft} DAYS LEFT`
-            };
-        }
-        return { label: 'FREE PLAN', color: '#94a3b8', icon: Rocket, sub: 'LIMITADO' };
-    };
-
-    const badge = getPlanBadge();
 
     return (
         <aside className={`sidebar-collapsible${isOpen ? '' : ' closed'}`} style={{
             width: '280px',
-            background: 'rgba(15, 23, 42, 0.8)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(15, 23, 42, 0.86)',
+            backdropFilter: 'blur(12px)',
             borderRight: '1px solid var(--glass-border)',
             display: 'flex',
             flexDirection: 'column',
-            padding: '2.5rem 1.5rem',
+            padding: '2rem 1.5rem',
             position: 'relative',
             zIndex: 100,
             flexShrink: 0,
             height: '100%'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem', paddingLeft: '0.5rem', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem', paddingLeft: '0.4rem' }}>
                 <div style={{
                     padding: '8px',
                     borderRadius: '14px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'rgba(56, 189, 248, 0.05)',
-                    border: '1px solid rgba(56, 189, 248, 0.1)',
+                    background: 'rgba(56, 189, 248, 0.07)',
+                    border: '1px solid rgba(56, 189, 248, 0.14)',
                     width: '48px',
                     height: '48px'
                 }}>
-                    <img src="/logo_icon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <img src="/logo_icon.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 {isOpen && (
-                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', lineHeight: '1' }}>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 950, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>Intelligent</span>
-                        <span style={{ color: 'var(--accent-secondary)', fontSize: '1rem', fontWeight: 900, letterSpacing: '-0.5px' }}>Portfolio</span>
+                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)' }}>Minha Carteira</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 700 }}>Painel pessoal</span>
                     </div>
                 )}
             </div>
 
-            {/* Elemento Decorativo Discreto */}
-            < div style={{ position: 'absolute', top: '10%', right: '-20px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }} />
+            <nav aria-label="Navegação principal" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', flex: 1 }}>
+                {menuItems.map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => onViewChange(item.id)}
+                        aria-current={currentView === item.id ? 'page' : undefined}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '1rem 1.1rem',
+                            borderRadius: '15px',
+                            background: currentView === item.id ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+                            border: '1px solid',
+                            borderColor: currentView === item.id ? 'rgba(255, 255, 255, 0.09)' : 'transparent',
+                            color: currentView === item.id ? 'var(--text-main)' : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            textAlign: 'left',
+                            fontWeight: currentView === item.id ? 800 : 600,
+                            fontSize: '1rem',
+                            outline: 'none',
+                            position: 'relative'
+                        }}
+                    >
+                        {currentView === item.id && (
+                            <span style={{
+                                position: 'absolute',
+                                left: 0,
+                                top: '25%',
+                                height: '50%',
+                                width: '4px',
+                                background: item.accent,
+                                borderRadius: '0 4px 4px 0'
+                            }} />
+                        )}
+                        <item.icon size={21} color={item.accent} />
+                        {isOpen && item.label}
+                    </button>
+                ))}
+            </nav>
 
-            < nav style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', flex: 1 }}>
-                {
-                    menuItems.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => onViewChange(item.id)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '1.1rem 1.2rem',
-                                borderRadius: '16px',
-                                background: currentView === item.id ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
-                                border: '1px solid',
-                                borderColor: currentView === item.id ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                                color: currentView === item.id ? 'var(--text-main)' : 'var(--text-secondary)',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                textAlign: 'left',
-                                fontWeight: currentView === item.id ? 800 : 600,
-                                fontSize: '1.05rem',
-                                outline: 'none',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            {/* Active Indicator Line */}
-                            {currentView === item.id && (
-                                <div style={{
-                                    position: 'absolute',
-                                    left: 0,
-                                    top: '25%',
-                                    height: '50%',
-                                    width: '4px',
-                                    background: item.accent,
-                                    borderRadius: '0 4px 4px 0',
-                                    boxShadow: `0 0 10px ${item.accent}`
-                                }} />
-                            )}
-                            <item.icon
-                                size={22}
-                                style={{
-                                    color: item.accent,
-                                    opacity: currentView === item.id ? 1 : 0.65,
-                                    transition: 'all 0.3s',
-                                    filter: currentView === item.id ? `drop-shadow(0 0 8px ${item.accent}40)` : 'none'
-                                }}
-                            />
-                            {item.label}
-                        </button>
-                    ))
-                }
-
-                {/* Botão Extra: Compartilhar Carteira */}
-                {
-                    onShare && (
-                        <button
-                            onClick={onShare}
-                            disabled={isSharing}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '1.1rem 1.2rem',
-                                borderRadius: '16px',
-                                background: 'transparent',
-                                border: '1px dashed rgba(168, 85, 247, 0.3)',
-                                color: 'var(--accent-purple)',
-                                cursor: isSharing ? 'not-allowed' : 'pointer',
-                                opacity: isSharing ? 0.6 : 1,
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                textAlign: 'left',
-                                fontWeight: 700,
-                                fontSize: '1.05rem',
-                                outline: 'none',
-                                marginTop: '0.5rem'
-                            }}
-                            onMouseOver={e => !isSharing && (e.currentTarget.style.background = 'rgba(168, 85, 247, 0.05)')}
-                            onMouseOut={e => !isSharing && (e.currentTarget.style.background = 'transparent')}
-                        >
-                            <Share2 size={22} />
-                            {isSharing ? 'Gerando...' : 'Compartilhar Carteira'}
-                        </button>
-                    )
-                }
-            </nav >
-
-            <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 <button
                     onClick={onHowItWorks}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
-                        padding: '1rem 1.2rem',
+                        padding: '0.9rem 1rem',
                         width: '100%',
-                        borderRadius: '16px',
+                        borderRadius: '14px',
                         background: 'rgba(56, 189, 248, 0.05)',
-                        border: '1px solid rgba(56, 189, 248, 0.1)',
+                        border: '1px solid rgba(56, 189, 248, 0.12)',
                         color: 'var(--accent-blue)',
                         cursor: 'pointer',
                         fontWeight: 700,
-                        fontSize: '1rem',
-                        transition: 'all 0.3s',
-                        marginBottom: '0.5rem'
+                        fontSize: '0.92rem'
                     }}
-                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)')}
-                    onMouseOut={e => (e.currentTarget.style.background = 'rgba(56, 189, 248, 0.05)')}
                 >
-                    <Rocket size={20} className="float-animation" /> Como Funciona
+                    <Rocket size={19} />
+                    {isOpen && 'Como funciona'}
                 </button>
 
-                <a
-                    href="mailto:pginvestimentos021@gmail.com?subject=Dúvida%20Intelligent%20Portfolio"
-                    style={{
+                <div style={{
+                    padding: '1rem',
+                    background: 'rgba(16, 185, 129, 0.05)',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(16, 185, 129, 0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '11px'
+                }}>
+                    <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: 'rgba(16, 185, 129, 0.12)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        padding: '0.8rem 1.2rem',
-                        width: '100%',
-                        borderRadius: '16px',
-                        background: 'transparent',
-                        border: '1px dashed rgba(255,255,255,0.1)',
-                        color: 'var(--text-muted)',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.9rem',
-                        transition: 'all 0.3s',
-                        marginBottom: '1rem',
-                        boxSizing: 'border-box'
-                    }}
-                    onMouseOver={e => { e.currentTarget.style.color = 'var(--text-main)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
-                    onMouseOut={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-                >
-                    <HelpCircle size={18} />
-                    Precisando de Ajuda?
-                </a>
-
-                <div style={{ padding: '1.2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: `1px solid ${badge.color}30`, display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.7rem' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${badge.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <badge.icon size={20} color={badge.color} />
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <HardDrive size={19} color="var(--accent-emerald)" />
                     </div>
-                    <div>
-                        <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)' }}>{badge.label}</p>
-                        <p style={{ margin: 0, fontSize: '0.7rem', color: badge.color, fontWeight: 700 }}>{badge.sub}</p>
-                    </div>
+                    {isOpen && (
+                        <div>
+                            <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>DADOS LOCAIS</p>
+                            <p style={{ margin: '2px 0 0', fontSize: '0.68rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>Neste computador</p>
+                        </div>
+                    )}
                 </div>
-
-                <button
-                    onClick={onLogout}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '1.1rem 1.2rem',
-                        width: '100%',
-                        borderRadius: '16px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--accent-rose)',
-                        cursor: 'pointer',
-                        fontWeight: 700,
-                        fontSize: '1.05rem',
-                        transition: 'all 0.3s',
-                        opacity: 0.8
-                    }}
-                >
-                    <X size={20} style={{ transform: 'rotate(0deg)', transition: 'transform 0.3s' }} onMouseOver={e => e.currentTarget.style.transform = 'rotate(90deg)'} onMouseOut={e => e.currentTarget.style.transform = 'rotate(0deg)'} /> Sair da Conta
-                </button>
             </div>
-        </aside >
+        </aside>
     );
 };

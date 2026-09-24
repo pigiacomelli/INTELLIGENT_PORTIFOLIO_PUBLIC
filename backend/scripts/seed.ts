@@ -1,77 +1,82 @@
 import { getDb } from '../db.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import pg from 'pg';
-import dotenv from 'dotenv';
-dotenv.config();
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 async function seed() {
-    console.log('🔄 Iniciando migração para PostgreSQL...');
-
-    // We use a direct client to execute large schema dumps safely on Neon instead of Pool wrappers
-    const pgClient = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-    await pgClient.connect();
-
     const db = await getDb();
+    const user = await db.get('SELECT id FROM users ORDER BY id ASC LIMIT 1');
 
-    // 1. Criar as tabelas
-    const schemaPath = path.resolve(__dirname, '../../database/schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf-8');
-    await pgClient.query(schema);
-    await pgClient.end();
-    console.log('✅ Schema criado com sucesso.');
+    if (!user) {
+        throw new Error('Crie uma conta no aplicativo antes de importar os dados de exemplo.');
+    }
 
-    // 2. Ler dados locais
-    const dataPath = path.resolve(__dirname, '../portfolio.json');
+    let group = await db.get(
+        'SELECT id FROM portfolio_groups WHERE user_id = ? ORDER BY id ASC LIMIT 1',
+        [user.id]
+    );
+    if (!group) {
+        const insertion = await db.run(
+            'INSERT INTO portfolio_groups (user_id, name) VALUES (?, ?)',
+            [user.id, 'Minha Carteira']
+        );
+        group = { id: insertion.lastInsertRowid };
+    }
+
+    const dataPath = path.resolve(moduleDirectory, '../portfolio.json');
     if (!fs.existsSync(dataPath)) {
-        console.log('⚠️ Arquivo portfolio.json não encontrado. Base inicial vazia.');
+        console.log('Arquivo portfolio.json não encontrado. Nada a importar.');
         return;
     }
 
-    const rawData = fs.readFileSync(dataPath, 'utf-8');
-    const portfolio = JSON.parse(rawData);
+    const portfolio = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const positions = Object.entries(portfolio.ativos || {}).flatMap(([category, items]) =>
+        (items as any[]).map((asset) => ({ category, asset }))
+    );
 
-    // 3. Inserir ativos e carteira no banco
-    const userId = 1; // Admin padrão criado no schema.sql
+    const result = await db.transaction(async (tx) => {
+        await tx.run(
+            "DELETE FROM portfolios WHERE user_id = ? AND portfolio_id = ? AND source = 'seed'",
+            [user.id, group.id]
+        );
 
-    // Limpar carteira existente do user para evitar duplicidade re-rodando o script
-    await db.run('DELETE FROM portfolios WHERE user_id = ?', [userId]);
+        let count = 0;
+        for (const { category, asset } of positions) {
+            const symbol = String(asset.ticker || '').trim().toUpperCase();
+            if (!symbol) continue;
 
-    let count = 0;
-    for (const category of Object.keys(portfolio.ativos)) {
-        const assetsList = portfolio.ativos[category];
-        for (const asset of assetsList) {
-            const symbol = asset.ticker;
-            const name = asset.ticker; // Simplificação para MVP
-            const type = category;
-            const instituicao = asset['Instituição'] || null;
-            const emissor = asset.Emissor || null;
-            const indexador = asset.indexador || null;
-            const quantity = asset.Quantidade || 0;
-            const avgPrice = asset.precoUnitario || 0;
-
-            // Inserir ou ignorar Ativo
-            await db.run(
-                'INSERT INTO assets (symbol, name, type) VALUES (?, ?, ?) ON CONFLICT (symbol) DO NOTHING',
-                [symbol, name, type]
+            await tx.run(
+                `INSERT INTO assets (symbol, name, type)
+                 VALUES (?, ?, ?)
+                 ON CONFLICT (symbol) DO UPDATE SET type = EXCLUDED.type`,
+                [symbol, symbol, category]
             );
-
-            // Inserir na Carteira
-            await db.run(
-                `INSERT INTO portfolios 
-                 (user_id, symbol, quantity, avg_price, instituicao, indexador, emissor) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [userId, symbol, quantity, avgPrice, instituicao, indexador, emissor]
+            await tx.run(
+                `INSERT INTO portfolios
+                 (user_id, symbol, quantity, avg_price, instituicao, indexador, emissor, source, portfolio_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'seed', ?)`,
+                [
+                    user.id,
+                    symbol,
+                    Number(asset.Quantidade) || 0,
+                    Number(asset.precoUnitario) || 0,
+                    asset['Instituição'] || null,
+                    asset.indexador || null,
+                    asset.Emissor || null,
+                    group.id
+                ]
             );
-            count++;
+            count += 1;
         }
-    }
+        return count;
+    });
 
-    console.log(`✅ Migração concluída! ${count} ativos inseridos no portfólio do usuário.`);
+    console.log(`Dados de exemplo importados: ${result} posições.`);
 }
 
-seed().catch(console.error);
+seed().catch((error) => {
+    console.error('Falha ao importar dados de exemplo:', error.message);
+    process.exit(1);
+});

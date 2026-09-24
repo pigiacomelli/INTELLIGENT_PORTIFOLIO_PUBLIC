@@ -14,6 +14,7 @@ interface PortfolioTableProps {
 export const PortfolioTable: React.FC<PortfolioTableProps> = ({ assets, activeTab, onEdit, onDelete, onAddAsset }) => {
     const catTotal = assets.reduce((acc: number, curr: any) => acc + (curr["Valor Atualizado"] || curr.Quantidade || 0), 0);
     const sortedAssets = [...assets].map((a, i) => ({ ...a, _originalIndex: i })).sort((a, b) => (b["Valor Atualizado"] || b.Quantidade || 0) - (a["Valor Atualizado"] || a.Quantidade || 0));
+    const valueBasedCategory = ['renda_fixa', 'tesouro', 'coe', 'caixa', 'imoveis'].includes(activeTab);
 
     if (assets.length === 0) {
         return <EmptyPortfolio onAddAsset={onAddAsset} />;
@@ -116,6 +117,14 @@ export const PortfolioTable: React.FC<PortfolioTableProps> = ({ assets, activeTa
                                                 </span>
                                             )}
                                         </div>
+                                    ) : activeTab === 'imoveis' ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700 }}>
+                                            <Building2 size={14} /> Imóvel físico
+                                        </div>
+                                    ) : activeTab === 'fundos' ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700 }}>
+                                            <Layers size={14} /> Fundo de investimento
+                                        </div>
                                     ) : (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
                                             <TrendingUp size={14} /> Ativo de Mercado
@@ -123,7 +132,7 @@ export const PortfolioTable: React.FC<PortfolioTableProps> = ({ assets, activeTa
                                     )}
                                 </td>
                                 <td style={{ padding: '1.5rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 800, borderBottom: idx === sortedAssets.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)' }}>
-                                    {asset.Quantidade.toLocaleString('pt-BR')} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>UN</span>
+                                    {valueBasedCategory ? <span style={{ color: 'var(--text-muted)' }}>—</span> : <>{asset.Quantidade.toLocaleString('pt-BR')} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>UN</span></>}
                                 </td>
                                 <td style={{ padding: '1.5rem 1.5rem', fontWeight: 900, color: 'var(--text-main)', fontSize: '1.15rem', borderBottom: idx === sortedAssets.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)' }}>
                                     <span style={{ fontSize: '0.9rem', color: 'var(--accent-blue)', marginRight: '4px' }}>R$</span>

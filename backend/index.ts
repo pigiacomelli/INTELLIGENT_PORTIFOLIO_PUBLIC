@@ -40,7 +40,7 @@ const authSchema = z.object({
 });
 
 const assetSchema = z.object({
-    ticker: z.string().min(1, 'Ticker é obrigatório').max(20),
+    ticker: z.string().min(1, 'Nome ou ticker é obrigatório').max(80),
     category: z.string().max(30).optional().default('outros'),
     Instituição: z.string().max(100).optional().nullable(),
     Emissor: z.string().max(100).optional().nullable(),
@@ -134,7 +134,13 @@ app.get('/health', async (req, res) => {
     try {
         const db = await getDb();
         await db.get('SELECT 1');
-        res.json({ status: 'UP', db: 'Connected', timestamp: new Date().toISOString() });
+        res.json({
+            status: 'UP',
+            db: 'Connected',
+            storage: config.LOCAL_MODE ? 'local-sqlite' : 'sqlite',
+            databasePath: config.DATABASE_PATH,
+            timestamp: new Date().toISOString()
+        });
     } catch (err: any) {
         logger.error('[HEALTH CHECK] Database connection failed:', err);
         alertService.sendAlert(`Health Check Failed: ${err.message}`, 'SEV1').catch(() => { });
@@ -143,6 +149,19 @@ app.get('/health', async (req, res) => {
 });
 
 // --- Auth Routes ---
+app.post('/api/local/session', async (_req, res) => {
+    if (!config.LOCAL_MODE) {
+        return res.status(404).json({ error: 'Modo local desativado.' });
+    }
+    try {
+        const session = await authService.createLocalSession();
+        res.json(session);
+    } catch (error: any) {
+        logger.error('[LOCAL] Failed to initialize local profile:', error);
+        res.status(500).json({ error: 'Não foi possível abrir a carteira local.' });
+    }
+});
+
 app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
         const validated = authSchema.parse(req.body);
@@ -228,7 +247,8 @@ app.get('/api/portfolio', authenticateToken, checkSubscription, async (req, res)
         }
 
         const symbolsData = await portfolioService.getUserPortfolio(userId, portfolioId);
-        const tickerSymbols = [...new Set(symbolsData.map(s => s.symbol))];
+        const marketPricedTypes = new Set(['acoes', 'fiis', 'etfs', 'etfs_internacional', 'cripto', 'acoes_internacionais', 'bonds']);
+        const tickerSymbols = [...new Set(symbolsData.filter(asset => marketPricedTypes.has(asset.type || 'acoes')).map(asset => asset.symbol))];
 
         const batchPrices = await marketDataService.getBatchPrices(tickerSymbols);
         const currentPrices: Record<string, number> = {};
@@ -443,6 +463,17 @@ app.post('/api/payments/create-portal-session', authenticateToken, async (req: a
 
 app.get('/api/payments/subscription-status', authenticateToken, async (req: any, res) => {
     try {
+        if (config.LOCAL_MODE) {
+            return res.json({
+                status: 'active',
+                plan: 'local',
+                isActive: true,
+                isTrial: false,
+                trialDaysLeft: 0,
+                subscriptionEndDate: null,
+                localMode: true
+            });
+        }
         const db = await getDb();
         const user = await db.get(
             'SELECT subscription_status, subscription_plan, trial_expires_at, subscription_end_date FROM users WHERE id = ?',
@@ -515,9 +546,11 @@ export async function startServer(nodeEnv = process.env.NODE_ENV) {
         priceUpdateService.startScheduler();
     }, 5000);
 
-    setTimeout(() => {
-        stripeSyncJob.startScheduler();
-    }, 10000);
+    if (config.STRIPE_SECRET_KEY && !config.LOCAL_MODE) {
+        setTimeout(() => {
+            stripeSyncJob.startScheduler();
+        }, 10000);
+    }
 
     return server;
 }

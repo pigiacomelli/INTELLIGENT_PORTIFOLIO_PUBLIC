@@ -4,12 +4,16 @@ import { getDb } from '../db.js';
 import { alertService } from './alertService.js';
 import { config } from '../config.js';
 
-const stripe = new Stripe(config.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-02-24.acacia' as any,
-});
+const stripe = config.STRIPE_SECRET_KEY
+    ? new Stripe(config.STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' as any })
+    : null;
 
 export class StripeSyncJob {
     async syncSubscriptions() {
+        if (!stripe) {
+            logger.info('[Stripe Sync] Desativado no modo local.');
+            return;
+        }
         logger.info('[Stripe Sync] 🔄 Iniciando reconciliação de assinaturas com o Stripe...');
         const db = await getDb();
 
@@ -74,6 +78,7 @@ export class StripeSyncJob {
     }
 
     startScheduler() {
+        if (!stripe) return;
         // Run immediately on start
         this.syncSubscriptions();
 

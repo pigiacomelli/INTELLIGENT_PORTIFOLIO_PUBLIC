@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { getDb } from '../db.js';
+import { config } from '../config.js';
 
 export const checkSubscription = async (req: Request, res: Response, next: NextFunction) => {
+    if (config.LOCAL_MODE && config.NODE_ENV !== 'test') {
+        return next();
+    }
     const userId = req.userId;
     if (!userId) {
         return res.status(401).json({ error: 'Usuário não autenticado.' });

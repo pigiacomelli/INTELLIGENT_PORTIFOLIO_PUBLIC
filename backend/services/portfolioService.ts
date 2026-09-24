@@ -78,7 +78,7 @@ export class PortfolioService {
         const allocation: Record<string, number> = {};
 
         for (const asset of assets) {
-            const validCategories = ['acoes', 'fiis', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
+            const validCategories = ['acoes', 'fiis', 'fundos', 'imoveis', 'etfs', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
             let type = asset.type || 'acoes';
             if (!validCategories.includes(type)) type = 'acoes';
 
@@ -124,7 +124,7 @@ export class PortfolioService {
         const totais: Record<string, number> = {};
         let totalInvestido = 0;
 
-        const validCategories = ['acoes', 'fiis', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
+        const validCategories = ['acoes', 'fiis', 'fundos', 'imoveis', 'etfs', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
 
         for (const asset of portfolio) {
             let type = asset.type || 'acoes';
@@ -201,14 +201,14 @@ export class PortfolioService {
                 if (assets.length === 0) return { successful: 0, failed: 0 };
 
                 // 2. Prepare Bulk Data for Assets Metadata
-                const validCategories = ['acoes', 'fiis', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
+                const validCategories = ['acoes', 'fiis', 'fundos', 'imoveis', 'etfs', 'etfs_internacional', 'renda_fixa', 'cripto', 'tesouro', 'coe', 'caixa', 'acoes_internacionais', 'bonds'];
 
                 const assetsParams: any[] = [];
                 const portfoliosParams: any[] = [];
                 let validAssetCount = 0;
 
                 for (const asset of assets) {
-                    const symbol = String(asset.ticker || '').trim().toUpperCase().substring(0, 20);
+                    const symbol = String(asset.ticker || '').trim().toUpperCase().substring(0, 80);
                     if (!symbol) continue;
 
                     let category = String(asset.category || '').trim().toLowerCase();

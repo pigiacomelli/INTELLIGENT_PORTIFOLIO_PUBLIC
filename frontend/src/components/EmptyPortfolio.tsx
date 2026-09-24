@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Wallet, Sparkles } from 'lucide-react';
+import { PlusCircle, Wallet, Upload } from 'lucide-react';
 
 interface EmptyPortfolioProps {
     onAddAsset: () => void;
@@ -65,7 +65,7 @@ export const EmptyPortfolio: React.FC<EmptyPortfolioProps> = ({ onAddAsset, onIm
                         margin: '0 0 0.5rem 0',
                         letterSpacing: '-0.5px'
                     }}>
-                        Sua jornada começa aqui
+                        Carteira vazia
                     </h2>
                     <p style={{
                         fontSize: '1rem',
@@ -74,7 +74,7 @@ export const EmptyPortfolio: React.FC<EmptyPortfolioProps> = ({ onAddAsset, onIm
                         lineHeight: 1.6,
                         margin: 0
                     }}>
-                        Adicione seus primeiros ativos para desbloquear análises avançadas e acompanhar o crescimento do seu patrimônio.
+                        Adicione um ativo manualmente ou importe sua posição consolidada da B3.
                     </p>
                 </div>
 
@@ -106,8 +106,7 @@ export const EmptyPortfolio: React.FC<EmptyPortfolioProps> = ({ onAddAsset, onIm
                     }}
                 >
                     <PlusCircle size={20} />
-                    Adicionar Primeiro Ativo
-                    <Sparkles size={16} color="rgba(255, 255, 255, 0.8)" style={{ marginLeft: '4px' }} />
+                    Adicionar ativo
                 </button>
 
                 {onImport && (
@@ -134,7 +133,7 @@ export const EmptyPortfolio: React.FC<EmptyPortfolioProps> = ({ onAddAsset, onIm
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        Importar Planilha B3 (Simplificado)
+                        <Upload size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Importar planilha B3
                     </button>
                 )}
             </div>

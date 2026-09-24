@@ -6,6 +6,60 @@ import { config } from '../config.js';
 const SECRET = config.JWT_SECRET;
 
 export class AuthService {
+    async createLocalSession() {
+        const db = await getDb();
+        const localEmail = 'carteira@computador.local';
+        let user = await db.get(
+            'SELECT id, email FROM users WHERE email = ?',
+            [localEmail]
+        );
+
+        if (!user) {
+            user = await db.transaction(async (tx) => {
+                const insertion = await tx.run(
+                    `INSERT INTO users
+                     (email, password_hash, subscription_status, subscription_plan, trial_expires_at)
+                     VALUES (?, ?, 'active', 'local', NULL)`,
+                    [localEmail, 'LOCAL_DEVICE_ACCOUNT']
+                );
+                const userId = insertion.lastInsertRowid;
+                await tx.run(
+                    'INSERT INTO portfolio_groups (user_id, name) VALUES (?, ?)',
+                    [userId, 'Minha Carteira']
+                );
+                return { id: userId, email: localEmail };
+            });
+        } else {
+            const group = await db.get(
+                'SELECT id FROM portfolio_groups WHERE user_id = ? ORDER BY id ASC LIMIT 1',
+                [user.id]
+            );
+            if (!group) {
+                await db.run(
+                    'INSERT INTO portfolio_groups (user_id, name) VALUES (?, ?)',
+                    [user.id, 'Minha Carteira']
+                );
+            }
+        }
+
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, local: true },
+            SECRET,
+            { expiresIn: '3650d' }
+        );
+
+        return {
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                subscriptionStatus: 'active',
+                subscriptionPlan: 'local',
+                localMode: true
+            }
+        };
+    }
+
     async registerUser(email: string, passwordRaw: string) {
         const db = await getDb();
 
@@ -22,26 +76,24 @@ export class AuthService {
         const trialExpiresAt = new Date();
         trialExpiresAt.setDate(trialExpiresAt.getDate() + config.TRIAL_DAYS);
 
-        // Otimização: Inserção do usuário e do grupo de portfólio em uma única query atômica
-        const query = `
-            WITH new_user AS (
-                INSERT INTO users (email, password_hash, subscription_status, subscription_plan, trial_expires_at)
-                VALUES (?, ?, ?, ?, ?)
-                RETURNING id, email, subscription_status, trial_expires_at
-            ),
-            new_group AS (
-                INSERT INTO portfolio_groups (user_id, name)
-                SELECT id, 'Minha Carteira' FROM new_user
-            )
-            SELECT * FROM new_user;
-        `;
-
-        const result = await db.get(query, [email, passwordHash, 'trial', 'free', trialExpiresAt]);
+        const result = await db.transaction(async (tx) => {
+            const insertion = await tx.run(
+                `INSERT INTO users (email, password_hash, subscription_status, subscription_plan, trial_expires_at)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [email, passwordHash, config.LOCAL_MODE ? 'active' : 'trial', config.LOCAL_MODE ? 'local' : 'free', trialExpiresAt]
+            );
+            const userId = insertion.lastInsertRowid;
+            await tx.run('INSERT INTO portfolio_groups (user_id, name) VALUES (?, ?)', [userId, 'Minha Carteira']);
+            return await tx.get(
+                'SELECT id, email, subscription_status, subscription_plan, trial_expires_at FROM users WHERE id = ?',
+                [userId]
+            );
+        });
         const user = {
             id: result.id,
             email: result.email,
             subscription_status: result.subscription_status,
-            subscription_plan: 'free',
+            subscription_plan: result.subscription_plan,
             trial_expires_at: result.trial_expires_at
         };
 

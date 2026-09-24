@@ -11,9 +11,9 @@ async function ensureMigrationsTable() {
     const db = await getDb();
     await db.exec(`
         CREATE TABLE IF NOT EXISTS _migrations (
-            id SERIAL PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT UNIQUE NOT NULL,
-            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            applied_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     `);
 }
@@ -44,13 +44,14 @@ async function runMigration(filename: string, direction: 'up' | 'down' = 'up') {
     }
 
     console.log(`🔄 ${direction === 'up' ? 'Applying' : 'Rolling back'} migration: ${filename}`);
-    if (sql) await db.exec(sql);
-
-    if (direction === 'up') {
-        await db.run('INSERT INTO _migrations (filename) VALUES (?)', [filename]);
-    } else {
-        await db.run('DELETE FROM _migrations WHERE filename = ?', [filename]);
-    }
+    await db.transaction(async (tx) => {
+        if (sql) await tx.exec(sql);
+        if (direction === 'up') {
+            await tx.run('INSERT INTO _migrations (filename) VALUES (?)', [filename]);
+        } else {
+            await tx.run('DELETE FROM _migrations WHERE filename = ?', [filename]);
+        }
+    });
     console.log(`✅ Migration ${direction === 'up' ? 'applied' : 'rolled back'}: ${filename}`);
 }
 

@@ -7,12 +7,13 @@ interface SubscriptionBannerProps {
         isTrial: boolean;
         trialDaysLeft: number;
         isActive: boolean;
+        localMode?: boolean;
     } | null;
     onUpgrade: () => void;
 }
 
 export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ subscription, onUpgrade }) => {
-    if (!subscription) return null;
+    if (!subscription || subscription.localMode) return null;
 
     if (subscription.status === 'past_due') {
         return (

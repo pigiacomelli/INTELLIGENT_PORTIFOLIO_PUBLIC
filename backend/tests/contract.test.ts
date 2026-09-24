@@ -60,6 +60,12 @@ vi.mock('../services/aiService.js', () => ({
 
 vi.mock('../services/authService.js', () => ({
     AuthService: class {
+        async createLocalSession() {
+            return {
+                token: 'valid-jwt',
+                user: { id: 1, email: 'carteira@computador.local', localMode: true }
+            };
+        }
         async registerUser(email: string) {
             return { token: 'valid-jwt', user: { id: 1, email, subscriptionStatus: 'trial', subscriptionPlan: 'free' } };
         }
@@ -89,6 +95,14 @@ describe('Contract tests', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.status).toBe('UP');
+    });
+
+    it('POST /api/local/session opens the personal portfolio without login', async () => {
+        const response = await request(app).post('/api/local/session');
+
+        expect(response.status).toBe(200);
+        expect(response.body.token).toBeDefined();
+        expect(response.body.user.localMode).toBe(true);
     });
 
     it('POST /api/auth/register validates invalid payload', async () => {

@@ -3,13 +3,20 @@ import Stripe from 'stripe';
 import { getDb } from '../db.js';
 import { config } from '../config.js';
 
-const stripe = new Stripe(config.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-02-24.acacia' as any,
-});
+const stripe = config.STRIPE_SECRET_KEY
+    ? new Stripe(config.STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' as any })
+    : null;
+
+const requireStripe = () => {
+    if (!stripe) {
+        throw new Error('Pagamentos não estão configurados no modo local.');
+    }
+    return stripe;
+};
 
 export const stripeService = {
     async createCheckoutSession(userId: number, userEmail: string, frontendUrl: string) {
-        const session = await stripe.checkout.sessions.create({
+        const session = await requireStripe().checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',
             customer_email: userEmail,
@@ -40,6 +47,7 @@ export const stripeService = {
      * Requires stripe_customer_id to be saved in the users table.
      */
     async createCustomerPortalSession(userId: number, frontendUrl: string) {
+        const stripeClient = requireStripe();
         const db = await getDb();
         const user = await db.get('SELECT stripe_customer_id FROM users WHERE id = ?', [userId]);
 
@@ -47,7 +55,7 @@ export const stripeService = {
             throw new Error('Nenhuma assinatura ativa encontrada para este usuário.');
         }
 
-        const session = await stripe.billingPortal.sessions.create({
+        const session = await stripeClient.billingPortal.sessions.create({
             customer: user.stripe_customer_id,
             return_url: `${frontendUrl}/dashboard`,
         });
@@ -56,12 +64,13 @@ export const stripeService = {
     },
 
     async handleWebhook(body: any, signature: string) {
+        const stripeClient = requireStripe();
         const webhookSecret = config.STRIPE_WEBHOOK_SECRET;
         let event: Stripe.Event;
 
         try {
             if (webhookSecret) {
-                event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+                event = stripeClient.webhooks.constructEvent(body, signature, webhookSecret);
             } else {
                 event = body as Stripe.Event;
             }

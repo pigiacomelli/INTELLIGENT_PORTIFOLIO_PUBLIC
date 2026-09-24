@@ -32,7 +32,7 @@ export interface Portfolio {
     }
 }
 
-import { LayoutDashboard, TrendingUp, Building2, ShieldCheck, Briefcase, Bitcoin, Sparkles, Globe2, Landmark, Wallet, Globe, BarChart2 } from 'lucide-react';
+import { TrendingUp, Building2, ShieldCheck, Briefcase, Bitcoin, Globe2, Landmark, Wallet, Globe, BarChart2, House, CircleDollarSign } from 'lucide-react';
 
 export const COLORS = [
     '#38bdf8', // Blue
@@ -48,9 +48,12 @@ export const COLORS = [
 export const TABS = [
     { id: 'acoes', label: 'Ações BR', icon: TrendingUp },
     { id: 'acoes_internacionais', label: 'Ações Intl', icon: Globe },
+    { id: 'etfs', label: 'ETFs BR', icon: Globe2 },
     { id: 'etfs_internacional', label: 'ETFs Internacionais', icon: Globe2 },
     { id: 'bonds', label: 'Bonds', icon: BarChart2 },
     { id: 'fiis', label: 'FIIs', icon: Building2 },
+    { id: 'fundos', label: 'Fundos', icon: CircleDollarSign },
+    { id: 'imoveis', label: 'Imóveis', icon: House },
     { id: 'renda_fixa', label: 'Renda Fixa', icon: ShieldCheck },
     { id: 'coe', label: 'COE', icon: Briefcase },
     { id: 'cripto', label: 'Cripto', icon: Bitcoin },
@@ -61,9 +64,12 @@ export const TABS = [
 export const CATEGORIES = [
     { id: 'acoes', label: 'Ações BR' },
     { id: 'acoes_internacionais', label: 'Ações Internacionais' },
+    { id: 'etfs', label: 'ETFs BR' },
     { id: 'etfs_internacional', label: 'ETFs Internacionais' },
     { id: 'bonds', label: 'Bonds' },
     { id: 'fiis', label: 'FIIs' },
+    { id: 'fundos', label: 'Fundos de Investimento' },
+    { id: 'imoveis', label: 'Imóveis' },
     { id: 'renda_fixa', label: 'Renda Fixa' },
     { id: 'tesouro', label: 'Tesouro' },
     { id: 'cripto', label: 'Cripto' },
