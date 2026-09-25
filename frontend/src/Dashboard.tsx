@@ -15,8 +15,7 @@ import {
     Upload,
     CheckCircle2,
     Menu,
-    BadgeDollarSign,
-    Globe
+    BadgeDollarSign
 } from 'lucide-react';
 
 import { EmptyPortfolio } from './components/EmptyPortfolio';
@@ -27,7 +26,7 @@ import { MercadoHoje } from './components/MercadoHoje';
 import { AIChat } from './components/AIChat';
 import { B3Importer } from './components/B3Importer';
 import { HowItWorksModal } from './components/HowItWorksModal';
-import { TABS, B3_INSTITUTIONS, COLORS, CATEGORIES, CRIPTO_OPTIONS, ETF_INTL_OPTIONS, ACOES_INTL_OPTIONS, BONDS_OPTIONS } from './utils/dashboardUtils';
+import { TABS, B3_INSTITUTIONS, COLORS, CATEGORIES } from './utils/dashboardUtils';
 
 import axios from 'axios';
 import { Sidebar } from './components/Sidebar';
@@ -89,6 +88,65 @@ const Dashboard = () => {
     };
     const [newAsset, setNewAsset] = useState<Asset>(initialAssetState);
     const [selectedCategory, setSelectedCategory] = useState('acoes');
+    const [quoteState, setQuoteState] = useState<{
+        status: 'idle' | 'loading' | 'success' | 'error';
+        message?: string;
+        lastUpdate?: string;
+    }>({ status: 'idle' });
+
+    const isAutomaticQuoteCategory = ['acoes_internacionais', 'bonds', 'etfs_internacional'].includes(selectedCategory);
+
+    React.useEffect(() => {
+        if (!isModalOpen || !isAutomaticQuoteCategory) {
+            setQuoteState({ status: 'idle' });
+            return;
+        }
+
+        const ticker = newAsset.ticker.trim().toUpperCase();
+        if (!ticker) {
+            setQuoteState({ status: 'idle' });
+            return;
+        }
+
+        let cancelled = false;
+        setQuoteState({ status: 'loading', message: 'Buscando cotação…' });
+
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                const response = await axios.get(`/api/market/price/${encodeURIComponent(ticker)}`);
+                if (cancelled) return;
+
+                const rawPrice = Number(response.data?.price);
+                if (!Number.isFinite(rawPrice) || rawPrice <= 0) throw new Error('Invalid quote');
+                const price = Math.round(rawPrice * 100) / 100;
+
+                setNewAsset(current => current.ticker.trim().toUpperCase() === ticker
+                    ? { ...current, ticker, precoUnitario: price }
+                    : current
+                );
+                setQuoteState({
+                    status: 'success',
+                    message: `Cotação encontrada: ${price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+                    lastUpdate: response.data?.lastUpdate
+                });
+            } catch (error: any) {
+                if (cancelled) return;
+                setNewAsset(current => current.ticker.trim().toUpperCase() === ticker
+                    ? { ...current, precoUnitario: 0 }
+                    : current
+                );
+                setQuoteState({
+                    status: 'error',
+                    message: `${error?.response?.data?.error || 'Não foi possível encontrar esse ticker.'} Digite o preço manualmente.`
+                });
+            }
+        }, 550);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [isModalOpen, isAutomaticQuoteCategory, newAsset.ticker]);
 
     React.useEffect(() => {
         const fetchInitialData = async () => {
@@ -209,6 +267,15 @@ const Dashboard = () => {
 
     const handleSaveAsset = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isAutomaticQuoteCategory && !newAsset.precoUnitario) {
+            setQuoteState({
+                status: 'error',
+                message: quoteState.status === 'loading'
+                    ? 'Aguarde a busca da cotação.'
+                    : 'Informe o preço manualmente para adicionar este ativo.'
+            });
+            return;
+        }
         const valueBasedCategories = ['renda_fixa', 'tesouro', 'coe', 'caixa', 'imoveis'];
         const assetToSave = {
             ...newAsset,
@@ -230,17 +297,6 @@ const Dashboard = () => {
         setNewAsset(initialAssetState);
         const category = activeTab === 'geral' || activeTab === 'mercado' ? 'acoes' : activeTab;
         setSelectedCategory(category);
-
-        // Set sensible default ticker for dropdown categories
-        const defaultTickers: Record<string, string> = {
-            cripto: CRIPTO_OPTIONS[0],
-            acoes_internacionais: ACOES_INTL_OPTIONS[0],
-            bonds: BONDS_OPTIONS[0],
-            etfs_internacional: ETF_INTL_OPTIONS[0],
-        };
-        if (defaultTickers[category]) {
-            setNewAsset({ ...initialAssetState, ticker: defaultTickers[category] });
-        }
 
         setIsModalOpen(true);
     };
@@ -615,8 +671,9 @@ const Dashboard = () => {
                                 onChange={e => {
                                     const cat = e.target.value;
                                     setSelectedCategory(cat);
+                                    setQuoteState({ status: 'idle' });
                                     // Reset placeholder fields based on category
-                                    if (cat === 'cripto') setNewAsset({ ...newAsset, ticker: CRIPTO_OPTIONS[0] });
+                                    if (['cripto', 'acoes_internacionais', 'bonds', 'etfs_internacional'].includes(cat)) setNewAsset({ ...newAsset, ticker: '', precoUnitario: 0 });
                                     else if (['renda_fixa', 'tesouro', 'coe'].includes(cat)) setNewAsset({ ...newAsset, indexador: 'CDI' });
                                 }}
                                 style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
@@ -637,62 +694,28 @@ const Dashboard = () => {
                                                     : 'TICKER'}
                                 </label>
 
-                                {/* Categories with dropdown + optional custom input */}
-                                {(['cripto', 'acoes_internacionais', 'bonds', 'etfs_internacional'] as string[]).includes(selectedCategory) ? (() => {
-                                    const optMap: Record<string, string[]> = {
-                                        cripto: CRIPTO_OPTIONS,
-                                        acoes_internacionais: ACOES_INTL_OPTIONS,
-                                        bonds: BONDS_OPTIONS,
-                                        etfs_internacional: ETF_INTL_OPTIONS,
-                                    };
-                                    const opts = optMap[selectedCategory] || [];
-                                    const lastOpt = opts[opts.length - 1]; // 'Outra' or 'Outro'
-                                    const isCustom = !opts.includes(newAsset.ticker) || newAsset.ticker === lastOpt;
-                                    return (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            <select
-                                                value={isCustom ? lastOpt : newAsset.ticker}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    setNewAsset({ ...newAsset, ticker: val === lastOpt ? lastOpt : val });
-                                                }}
-                                                style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
-                                            >
-                                                {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                            </select>
-                                            {isCustom && (
-                                                <div style={{ position: 'relative' }}>
-                                                    <input
-                                                        required
-                                                        autoFocus
-                                                        placeholder={selectedCategory === 'cripto' ? 'Digite o Ticker (Ex: DOGE)' : 'Digite o Ticker (Ex: AAPL)'}
-                                                        value={newAsset.ticker === lastOpt ? '' : newAsset.ticker}
-                                                        onChange={e => setNewAsset({ ...newAsset, ticker: e.target.value.toUpperCase().trim() })}
-                                                        style={{ width: '100%', background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setNewAsset({ ...newAsset, ticker: opts[0] })}
-                                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--accent-blue)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
-                                                    >VOLTAR</button>
-                                                </div>
-                                            )}
-                                            {['acoes_internacionais', 'bonds', 'etfs_internacional'].includes(selectedCategory) && (
-                                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <Globe size={10} /> Preço em USD, convertido para BRL automaticamente
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })() : (
-                                    <input
-                                        required
-                                        placeholder={selectedCategory === 'acoes' ? 'Ex: ITUB4' : selectedCategory === 'imoveis' ? 'Ex: Apartamento Centro' : selectedCategory === 'fundos' ? 'Ex: Fundo Multimercado' : 'Ex: CDB Banco X'}
-                                        value={newAsset.ticker}
-                                        onChange={e => setNewAsset({ ...newAsset, ticker: e.target.value.toUpperCase() })}
-                                        style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
-                                    />
-                                )}
+                                <input
+                                    required
+                                    type="text"
+                                    autoComplete="off"
+                                    placeholder={
+                                        selectedCategory === 'acoes' ? 'Ex: ITUB4'
+                                            : selectedCategory === 'acoes_internacionais' ? 'Ex: AAPL'
+                                                : selectedCategory === 'etfs_internacional' ? 'Ex: VOO'
+                                                    : selectedCategory === 'bonds' ? 'Ex: TLT'
+                                                        : selectedCategory === 'cripto' ? 'Ex: BTC'
+                                                            : selectedCategory === 'imoveis' ? 'Ex: Apartamento Centro'
+                                                                : selectedCategory === 'fundos' ? 'Ex: Fundo Multimercado'
+                                                                    : 'Ex: CDB Banco X'
+                                    }
+                                    value={newAsset.ticker}
+                                    onChange={e => setNewAsset({
+                                        ...newAsset,
+                                        ticker: e.target.value.toUpperCase(),
+                                        precoUnitario: isAutomaticQuoteCategory ? 0 : newAsset.precoUnitario
+                                    })}
+                                    style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
+                                />
                             </div>
 
                             {/* INSTITUIÇÃO / EMISSOR */}
@@ -727,7 +750,7 @@ const Dashboard = () => {
                             </div>
 
                             {/* PREÇO ATUAL / TAXA */}
-                            {['acoes', 'fiis', 'fundos', 'etfs', 'etfs_internacional'].includes(selectedCategory) && (
+                            {['acoes', 'fiis', 'fundos', 'etfs', 'acoes_internacionais', 'bonds', 'etfs_internacional'].includes(selectedCategory) && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                     <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>PREÇO ATUAL POR UNIDADE</label>
                                     <input
@@ -735,11 +758,17 @@ const Dashboard = () => {
                                         step="any"
                                         min="0"
                                         value={newAsset.precoUnitario}
+                                        readOnly={isAutomaticQuoteCategory && quoteState.status !== 'error'}
                                         onChange={e => setNewAsset({ ...newAsset, precoUnitario: Number(e.target.value) })}
-                                        style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none' }}
+                                        style={{ background: 'var(--bg-dark)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.8rem 1rem', borderRadius: '12px', fontSize: '1rem', outline: 'none', cursor: isAutomaticQuoteCategory && quoteState.status !== 'error' ? 'default' : 'text' }}
                                     />
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                                        Valor calculado: {(newAsset.Quantidade * (newAsset.precoUnitario || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    <span
+                                        aria-live={isAutomaticQuoteCategory ? 'polite' : undefined}
+                                        style={{ color: quoteState.status === 'error' && isAutomaticQuoteCategory ? '#fb7185' : quoteState.status === 'success' && isAutomaticQuoteCategory ? '#34d399' : 'var(--text-muted)', fontSize: '0.75rem' }}
+                                    >
+                                        {isAutomaticQuoteCategory
+                                            ? quoteState.message || 'Digite o ticker para pesquisar o preço em reais.'
+                                            : `Valor calculado: ${(newAsset.Quantidade * (newAsset.precoUnitario || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
                                     </span>
                                 </div>
                             )}
@@ -783,8 +812,8 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={isSaving} style={{ width: '100%', background: 'var(--accent-blue)', border: 'none', color: 'white', padding: '1.2rem', borderRadius: '12px', fontWeight: 800, fontSize: '1rem', cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 8px 25px rgba(56, 189, 248, 0.3)' }}>
-                        {isSaving ? 'Salvando...' : editingAsset ? 'Atualizar Ativo' : 'Adicionar à Carteira'}
+                    <button type="submit" disabled={isSaving || (isAutomaticQuoteCategory && quoteState.status === 'loading')} style={{ width: '100%', background: 'var(--accent-blue)', border: 'none', color: 'white', padding: '1.2rem', borderRadius: '12px', fontWeight: 800, fontSize: '1rem', cursor: isSaving || (isAutomaticQuoteCategory && quoteState.status === 'loading') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 8px 25px rgba(56, 189, 248, 0.3)', opacity: isAutomaticQuoteCategory && quoteState.status === 'loading' ? 0.7 : 1 }}>
+                        {isSaving ? 'Salvando...' : isAutomaticQuoteCategory && quoteState.status === 'loading' ? 'Buscando cotação...' : editingAsset ? 'Atualizar Ativo' : 'Adicionar à Carteira'}
                     </button>
                 </form>
             </Modal>

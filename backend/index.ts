@@ -51,6 +51,12 @@ const assetSchema = z.object({
     taxa: z.string().max(50).optional().nullable()
 });
 
+const tickerSchema = z.string()
+    .trim()
+    .min(1, 'Ticker obrigatório')
+    .max(20, 'Ticker inválido')
+    .regex(/^[A-Za-z0-9.^=\-]+$/, 'Ticker inválido');
+
 const marketDataService = new MarketDataService();
 const portfolioService = new PortfolioService();
 const aiService = new AIService();
@@ -217,6 +223,32 @@ app.delete('/api/auth/me', authenticateToken, async (req, res) => {
         res.json({ success: true, message: 'Account deleted' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Market Data Routes ---
+
+app.get('/api/market/price/:ticker', authenticateToken, async (req, res) => {
+    try {
+        const ticker = tickerSchema.parse(req.params.ticker).toUpperCase();
+        const quote = await marketDataService.getStockPrice(ticker);
+
+        if (!Number.isFinite(quote.price) || quote.price <= 0) {
+            return res.status(404).json({ error: 'Cotação não encontrada para este ticker.' });
+        }
+
+        res.json({
+            ...quote,
+            symbol: ticker,
+            currency: 'BRL'
+        });
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Informe um ticker válido.' });
+        }
+
+        logger.warn(`[MARKET] Quote not found for ${req.params.ticker}:`, error?.message || error);
+        res.status(404).json({ error: 'Não encontramos uma cotação para este ticker.' });
     }
 });
 

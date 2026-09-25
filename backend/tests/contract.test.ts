@@ -37,6 +37,9 @@ vi.mock('../services/stripeSyncJob.js', () => ({
 vi.mock('../services/marketDataService.js', () => ({
     MarketDataService: class {
         async getBatchPrices() { return {}; }
+        async getStockPrice(symbol: string) {
+            return { symbol, price: 612.34, lastUpdate: '2026-09-25T12:00:00.000Z' };
+        }
     }
 }));
 
@@ -136,6 +139,27 @@ describe('Contract tests', () => {
         expect(response.status).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body[0].name).toBe('Minha Carteira');
+    });
+
+    it('GET /api/market/price/:ticker returns the quote in BRL', async () => {
+        const response = await request(app)
+            .get('/api/market/price/voo')
+            .set('Authorization', 'Bearer valid-jwt');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toMatchObject({
+            symbol: 'VOO',
+            price: 612.34,
+            currency: 'BRL'
+        });
+    });
+
+    it('GET /api/market/price/:ticker rejects invalid tickers', async () => {
+        const response = await request(app)
+            .get('/api/market/price/ticker%20inv%C3%A1lido')
+            .set('Authorization', 'Bearer valid-jwt');
+
+        expect(response.status).toBe(400);
     });
 
     it('POST /api/payments/create-checkout-session returns stripe url', async () => {

@@ -98,14 +98,6 @@ export const B3_INSTITUTIONS = [
     'Outra'
 ];
 
-export const CRIPTO_OPTIONS = ['BTC', 'ETH', 'SOL', 'USDT', 'USDC', 'ADA', 'XRP', 'DOT', 'LINK', 'DOGE', 'Outra'];
-
-export const ETF_INTL_OPTIONS = ['IVV', 'VOO', 'QQQ', 'VT', 'VTI', 'VEA', 'SCHD', 'VNQ', 'Outro'];
-
-export const ACOES_INTL_OPTIONS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'BRK-B', 'JPM', 'UNH', 'Outra'];
-
-export const BONDS_OPTIONS = ['TLT', 'AGG', 'BND', 'IEF', 'SHY', 'TIPS', 'HYG', 'LQD', 'BNDX', 'Outro'];
-
 export const CustomLegendOverlay = ({ data, total, show, formatLabel, title = "Legenda", colors = COLORS }: any) => {
     if (!show) return null;
 
